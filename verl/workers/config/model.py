@@ -264,6 +264,9 @@ class DiffusersModelConfig(BaseConfig):
     exclude_modules: Optional[str] = None
     lora_adapter_path: Optional[str] = None
 
+    # megatron lora config (compatible with HFModelConfig)
+    lora: dict[str, Any] = field(default_factory=dict)
+
     # commonly used sampling parameters for diffusion config.
     height: int = 512
     width: int = 512
