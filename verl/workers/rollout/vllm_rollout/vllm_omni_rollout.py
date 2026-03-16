@@ -1,4 +1,4 @@
-# Copyright 2025 Bytedance Ltd. and/or its affiliates
+# Copyright 2026 Bytedance Ltd. and/or its affiliates
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class vLLMOmniServerAdapter(ServerAdapter):
         device_mesh: DeviceMesh,
         replica_rank: int = -1,
     ):
-        super(ServerAdapter, self).__init__(config, model_config, device_mesh)
+        super().__init__(config, model_config, device_mesh)
         self.server_handle: ray.actor.ActorHandle = None
 
         rank = int(os.environ["RANK"])

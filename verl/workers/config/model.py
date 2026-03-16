@@ -253,43 +253,25 @@ class DiffusersModelConfig(BaseConfig):
 
     external_lib: Optional[str] = None
 
-    override_config: dict = field(default_factory=dict)
+    enable_gradient_checkpointing: bool = True
 
-    enable_gradient_checkpointing: bool = False
-    enable_activation_offload: bool = False
-
-    use_remove_padding: bool = True
-
-    # lora related. We may setup a separate config later
+    # lora related.
     lora_rank: int = 32
     lora_alpha: int = 64
     lora_init_weights: str = "gaussian"
     target_modules: Optional[Any] = "all-linear"  # allow both "all-linear" and ["q_proj","k_proj"]
     target_parameters: Optional[list[str]] = None  # for lora adapter on nn.Parameter
-
     exclude_modules: Optional[str] = None
-
-    # megatron lora config
-    lora: dict[str, Any] = field(default_factory=dict)
-
-    # path to pre-trained LoRA adapter to load for continued training
     lora_adapter_path: Optional[str] = None
-    use_liger: bool = False
 
-    # optimization related
-    use_fused_kernels: bool = False
-    fused_kernel_options: dict = field(default_factory=dict)
-
-    # TiledMLP configuration for memory-efficient MLP computation
-    tiled_mlp: dict = field(default_factory=lambda: {"enabled": False, "num_shards": 4})
-
-    # sample related
-    image_height: int = 512
-    image_width: int = 512
+    # commonly used sampling parameters for diffusion config.
+    height: int = 512
+    width: int = 512
     num_inference_steps: int = 10
-    noise_level: float = 0.7
     guidance_scale: float = 4.5
-    sde_type: str = "sde"  # "sde" or "cps"
+
+    # extra configs for algorithm specific features.
+    extra_configs: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         import_external_libs(self.external_lib)

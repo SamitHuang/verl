@@ -1,4 +1,4 @@
-# Copyright 2024 Bytedance Ltd. and/or its affiliates
+# Copyright 2026 Bytedance Ltd. and/or its affiliates
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,27 @@ from types import MethodType
 from typing import Any, Literal, get_args
 
 import torch
-from vllm_omni.diffusion.worker.diffusion_worker import CustomPipelineWorkerExtension
 
 from verl.utils.device import is_npu_available
-from verl.utils.vllm import OmniTensorLoRARequest, TensorLoRARequest, VLLMHijack, VLLMOmniHijack
+from verl.utils.vllm import TensorLoRARequest, VLLMHijack
 from verl.utils.vllm.patch import patch_vllm_moe_model_weight_loader
 from verl.utils.vllm.vllm_fp8_utils import apply_vllm_fp8_patches, is_fp8_model, load_quanted_weights
+
+try:
+    from vllm_omni.diffusion.worker.diffusion_worker import CustomPipelineWorkerExtension
+
+    from verl.utils.vllm_omni import OmniTensorLoRARequest, VLLMOmniHijack
+
+    _VLLM_OMNI_AVAILABLE = True
+except ImportError:  # vllm_omni and related utilities are optional
+    CustomPipelineWorkerExtension = None  # type: ignore[assignment]
+    OmniTensorLoRARequest = None  # type: ignore[assignment]
+    VLLMOmniHijack = None  # type: ignore[assignment]
+    _VLLM_OMNI_AVAILABLE = False
+
+# Use object as fallback base so the class definition is always valid even when
+# vllm_omni is not installed (None is not a valid base class).
+_OmniWorkerBase = CustomPipelineWorkerExtension if _VLLM_OMNI_AVAILABLE else object
 
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
@@ -237,7 +252,7 @@ class vLLMColocateWorkerExtension:
         return f"ipc:///tmp/rl-colocate-zmq-{self.device_uuid}.sock"
 
 
-class vLLMOmniColocateWorkerExtension(CustomPipelineWorkerExtension):
+class vLLMOmniColocateWorkerExtension(_OmniWorkerBase):
     """
     The class for vLLM-Omni's worker to inherit from, in the colocate setting.
     By defining an extension class, the code can work no matter what is
@@ -251,6 +266,7 @@ class vLLMOmniColocateWorkerExtension(CustomPipelineWorkerExtension):
     """
 
     def __new__(cls, **kwargs):
+        assert _VLLM_OMNI_AVAILABLE, "vLLM-Omni is required to use vLLMOmniColocateWorkerExtension"
         set_death_signal()
 
         # 1. patch for Lora
