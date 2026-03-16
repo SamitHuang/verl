@@ -37,12 +37,9 @@ from pprint import pprint
 from typing import Any, Callable, Optional
 
 import ray
+import vllm.entrypoints.cli.serve
+from packaging import version
 from ray.actor import ActorHandle
-
-try:
-    from vllm.utils.argparse_utils import FlexibleArgumentParser
-except ImportError:
-    from vllm.utils import FlexibleArgumentParser
 
 from verl.utils.config import omega_conf_to_dataclass
 from verl.utils.device import get_resource_name, get_visible_devices_keyword
@@ -50,6 +47,13 @@ from verl.utils.net_utils import get_free_port, is_valid_ipv6_address
 from verl.utils.profiler import DistProfiler
 from verl.workers.rollout.replica import RolloutMode, RolloutReplica
 from verl.workers.rollout.vllm_rollout.utils import build_cli_args_from_config, get_vllm_max_lora_rank
+
+_VLLM_VERSION = version.parse(vllm.__version__)
+
+if _VLLM_VERSION > version.parse("0.11.0"):
+    from vllm.utils.argparse_utils import FlexibleArgumentParser
+else:
+    from vllm.utils import FlexibleArgumentParser
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)

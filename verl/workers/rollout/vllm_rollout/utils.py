@@ -1,4 +1,4 @@
-# Copyright 2026 Bytedance Ltd. and/or its affiliates
+# Copyright 2024 Bytedance Ltd. and/or its affiliates
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -272,22 +272,12 @@ class vLLMOmniColocateWorkerExtension(_OmniWorkerBase):
         # 1. patch for Lora
         VLLMOmniHijack.hijack()
 
-        # TODO: For ascend NPU, when the corresponding vllm-ascend version is upgraded to v0.13.0,
-        # please remove the VLLM_ASCEND_REQUIRED_ENV_VARS variable replacement action.
-        # This is only a fix for vllm version < v0.13.0.
-        if is_npu_available:
-            raise NotImplementedError("vLLMOmniColocateWorkerExtension is not supported on NPU currently.")
-
         return super().__new__(cls)
 
     def update_weights_from_ipc(self, peft_config: dict = None, base_sync_done=False, use_shm: bool = False):
         """Update the weights of the rollout model."""
-        from vllm.platforms import current_platform
 
         from verl.workers.rollout.vllm_rollout.bucketed_weight_transfer import BucketedWeightReceiver
-
-        if current_platform.device_type == "npu" and self.device is None:
-            self.device = torch.device(f"npu:{self.local_rank}")
 
         # In async mode, make sure the old lora is removed before adding the new one
         if peft_config and base_sync_done:

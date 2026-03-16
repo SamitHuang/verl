@@ -311,9 +311,9 @@ class DiffusionRolloutConfig(RolloutConfig):
     val_kwargs: DiffusionSamplingConfig = field(default_factory=DiffusionSamplingConfig)
 
     # diffusion use
-    image_height: int = 512
+    height: int = 512
 
-    image_width: int = 512
+    width: int = 512
 
     num_inference_steps: int = 10
 
