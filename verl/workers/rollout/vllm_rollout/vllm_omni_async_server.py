@@ -36,13 +36,13 @@ from verl.workers.rollout.vllm_rollout.utils import (
     VLLM_LORA_NAME,
     VLLM_LORA_PATH,
 )
-from verl.workers.rollout.vllm_rollout.vllm_base_async_server import BaseVLLMHttpServer, BaseVLLMReplica
+from verl.workers.rollout.vllm_rollout.vllm_async_server import vLLMHttpServer, vLLMReplica
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
 
-class vLLMOmniHttpServer(BaseVLLMHttpServer):
+class vLLMOmniHttpServer(vLLMHttpServer):
     """vLLM-Omni http server in single node, this is equivalent to launch server with command line:
     ```
     vllm serve --tensor-parallel-size=8 ...
@@ -230,7 +230,7 @@ class vLLMOmniHttpServer(BaseVLLMHttpServer):
         )
 
 
-class vLLMOmniReplica(BaseVLLMReplica):
+class vLLMOmniReplica(vLLMReplica):
     def __init__(
         self,
         replica_rank: int,
