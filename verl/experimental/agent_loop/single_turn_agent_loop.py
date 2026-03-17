@@ -88,7 +88,7 @@ class SingleTurnAgentLoop(AgentLoopBase):
 class DiffusionSingleTurnAgentLoop(AgentLoopBase):
     """Agent loop for diffusion model serving."""
 
-    async def run(self, sampling_params: dict[str, Any], **kwargs) -> AgentLoopOutput:
+    async def run(self, sampling_params: dict[str, Any], **kwargs) -> DiffusionAgentLoopOutput:
         raw_prompt = kwargs["raw_prompt"]
 
         if self.config.actor_rollout_ref.rollout.guidance_scale > 0:
@@ -106,6 +106,8 @@ class DiffusionSingleTurnAgentLoop(AgentLoopBase):
 
         if raw_negative_prompt is not None:
             negative_prompt_ids = await self.apply_chat_template(raw_negative_prompt, images=images, videos=videos)
+        else:
+            negative_prompt_ids = None
 
         # 3. generate sequences
         metrics = {}
