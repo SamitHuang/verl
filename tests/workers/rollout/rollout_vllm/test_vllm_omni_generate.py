@@ -142,7 +142,6 @@ def init_server():
             "width": 512,
             "num_inference_steps": 10,
             "guidance_scale": 4.0,
-            "calculate_log_probs": True,
             "engine_kwargs": {
                 "vllm_omni": {
                     "custom_pipeline": "verl.models.diffusion.vllm_omni.QwenImagePipelineWithLogProb",
