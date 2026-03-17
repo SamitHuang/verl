@@ -27,6 +27,7 @@ from vllm_omni.inputs.data import OmniCustomPrompt, OmniDiffusionSamplingParams
 from vllm_omni.lora.request import LoRARequest
 from vllm_omni.outputs import OmniRequestOutput
 
+from verl.utils.config import omega_conf_to_dataclass
 from verl.utils.tokenizer import normalize_token_ids
 from verl.workers.config import DiffusersModelConfig, DiffusionRolloutConfig
 from verl.workers.rollout.replica import ImageOutput
@@ -52,6 +53,14 @@ class vLLMOmniHttpServer(vLLMHttpServer):
     # -----------------------------------------------------------------------
     # Initialisation hooks
     # -----------------------------------------------------------------------
+
+    def _init_model_config(self, model_config):
+        """Use DiffusersModelConfig instead of HFModelConfig."""
+        return omega_conf_to_dataclass(model_config, dataclass_type=DiffusersModelConfig)
+
+    def _validate_configs(self) -> None:
+        """No-op: diffusion models don't have max_position_embeddings."""
+        pass
 
     def _post_init(self, cuda_visible_devices: str) -> None:
         """Omni-specific post-init: create PIL→tensor converter, then log."""
