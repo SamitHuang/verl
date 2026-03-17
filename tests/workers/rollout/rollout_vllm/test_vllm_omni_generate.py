@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 E2E test for vLLMOmniHttpServer generate flow.
 
@@ -20,40 +21,86 @@ Usage:
 """
 
 import os
+import shutil
+import atexit
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
 import ray
 from omegaconf import OmegaConf
+from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer
 
 from verl.utils.tokenizer import normalize_token_ids
 from verl.workers.rollout.replica import ImageOutput, RolloutMode
 from verl.workers.rollout.vllm_rollout.vllm_omni_async_server import vLLMOmniHttpServer
 
-MODEL_PATH = os.path.expanduser("tiny-random/Qwen-Image")
+
+# ---------------------------------------------------------------------
+#                👇 Model Caching & Auto‑Download Logic 👇
+# ---------------------------------------------------------------------
+
+LOCAL_MODEL_PATH = Path(os.path.expanduser("~/models/tiny-random/Qwen-Image"))
+CACHE_DIR = Path(os.path.expanduser("~/.cache/tiny-random/Qwen-Image"))
+
+# Use your specified HF repo name/path directly here
+MODEL_REPO = "tiny-random/Qwen-Image"
+MODEL_PATH = LOCAL_MODEL_PATH
 
 
-# The pipeline (QwenImagePipelineWithLogProb._get_qwen_prompt_embeds) drops
-# the first ``prompt_template_encode_start_idx`` (34) chat-template prefix
-# tokens.  Every tokenized prompt must therefore be longer than this value.
+def ensure_model_available() -> str:
+    """Ensure the model weights and tokenizer are available for testing.
+
+    If missing locally, download from HF Hub, cache temporarily, and
+    mark for deletion on process exit.
+    """
+    if LOCAL_MODEL_PATH.exists():
+        print(f"✅ Using local model at {LOCAL_MODEL_PATH}")
+        return str(LOCAL_MODEL_PATH)
+
+    print(f"⚠️ Local model not found at {LOCAL_MODEL_PATH}. Pulling from Hugging Face Hub...")
+
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    hf_model_path = snapshot_download(
+        repo_id=MODEL_REPO,
+        cache_dir=str(CACHE_DIR),
+        local_files_only=False,
+        resume_download=True,
+    )
+
+    print(f"✅ Downloaded model to cache: {hf_model_path}")
+
+    def _cleanup():
+        print(f"🧹 Cleaning up downloaded model cache: {hf_model_path}")
+        shutil.rmtree(hf_model_path, ignore_errors=True)
+
+    atexit.register(_cleanup)
+    return hf_model_path
+
+
+MODEL_PATH = ensure_model_available()
+
+
+# ---------------------------------------------------------------------
+#                👇 Test Helper Functions & Fixtures 👇
+# ---------------------------------------------------------------------
+
 _MIN_PROMPT_TOKENS = 35
 
 
 def _tokenize_prompt(text: str) -> list[int]:
-    """Tokenize a text prompt into valid token IDs for the model.
-
-    Uses apply_chat_template to wrap the text in the Qwen chat format
-    (system + user turn), which the pipeline's text encoder expects
-    (it drops the first 34 chat-template prefix tokens).
-    The prompt text must be long enough so the total token count exceeds 34.
-    """
-    tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_PATH, "tokenizer"), trust_remote_code=True)
+    """Tokenize a text prompt into valid token IDs for the model."""
+    tokenizer = AutoTokenizer.from_pretrained(
+        os.path.join(MODEL_PATH, "tokenizer"), trust_remote_code=True
+    )
     messages = [{"role": "user", "content": text}]
-    token_ids = normalize_token_ids(tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=False))
+    token_ids = normalize_token_ids(
+        tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=False)
+    )
     assert len(token_ids) > _MIN_PROMPT_TOKENS, (
         f"Prompt too short ({len(token_ids)} tokens, need >{_MIN_PROMPT_TOKENS}). "
-        f"The pipeline drops the first 34 chat-template prefix tokens; "
+        f"The pipeline drops the first 34 chat‑template prefix tokens; "
         f"use a longer prompt so content tokens remain after the drop."
     )
     return token_ids
@@ -255,7 +302,3 @@ def test_generate_concurrent(init_server):
         assert res.stop_reason in ("completed", "aborted", None)
 
     print(f"All {n_requests} concurrent requests returned valid ImageOutput")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])
