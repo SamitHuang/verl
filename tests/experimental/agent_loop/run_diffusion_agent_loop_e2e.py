@@ -40,7 +40,7 @@ import numpy as np
 import ray
 import torch
 from hydra import compose, initialize_config_dir
-from omegaconf import DictConfig
+from omegaconf import DictConfig, open_dict
 from PIL import Image
 
 from verl.experimental.agent_loop.agent_loop import AgentLoopManager
@@ -145,7 +145,8 @@ def build_config(args: argparse.Namespace) -> DictConfig:
 
     config.actor_rollout_ref.model.path = model_path
     config.actor_rollout_ref.model.tokenizer_path = tokenizer_path
-    config.actor_rollout_ref.model.extra_configs.noise_level = args.noise_level
+    with open_dict(config.actor_rollout_ref.model.extra_configs):
+        config.actor_rollout_ref.model.extra_configs.noise_level = args.noise_level
     config.actor_rollout_ref.rollout.name = "vllm_omni"
     config.actor_rollout_ref.rollout.mode = "async"
     config.actor_rollout_ref.rollout.enforce_eager = True
