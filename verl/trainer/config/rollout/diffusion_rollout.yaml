@@ -4,7 +4,7 @@
 # 3. Inline comments (after a field on the same line) are not allowed.
 # 4. Indentation level is respected for nested fields.
 
-# defaults specify the default config from each component, inheriting from rollout.yaml
+# inheriting from rollout.yaml
 defaults:
 
   - rollout
@@ -18,10 +18,10 @@ _target_: verl.workers.config.DiffusionRolloutConfig
 # actor_rollout_ref.rollout.name: vllm_omni/hf/vllm/sglang/trtllm. The default value will be removed in the future
 name: ???
 
-# image height for diffusion model rollout
+# image/video height for diffusion model rollout
 height: 512
 
-# image width for diffusion model rollout
+# image/video width for diffusion model rollout
 width: 512
 
 # number of inference steps for diffusion model rollout
