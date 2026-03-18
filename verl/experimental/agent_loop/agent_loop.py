@@ -1078,7 +1078,6 @@ class DiffusionAgentLoopWorker:
 
         extra_fields["raw_prompt"] = kwargs["raw_prompt"]
 
-        # TODO(wuxibin): remove padding and use tensordict.
         self.tokenizer.padding_side = "left"
         prompt_output = self.tokenizer.pad(
             {"input_ids": output.prompt_ids},
