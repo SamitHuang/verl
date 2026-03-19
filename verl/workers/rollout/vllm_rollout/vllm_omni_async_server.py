@@ -49,10 +49,9 @@ _OMNI_DIRECT_DIFFUSION_PARAMS = {
     "num_inference_steps",
     "seed",
     "true_cfg_scale",
+    "guidance_scale",
     "max_sequence_length",
 }
-
-_OMNI_DIFFUSION_RENAME_MAP: dict[str, str] = {}
 
 
 class vLLMOmniHttpServer(vLLMHttpServer):
@@ -175,7 +174,6 @@ class vLLMOmniHttpServer(vLLMHttpServer):
             sampling_params,
             model_extra_configs=self.model_config.extra_configs,
             direct_param_names=_OMNI_DIRECT_DIFFUSION_PARAMS,
-            rename_map=_OMNI_DIFFUSION_RENAME_MAP,
         )
         if lora_request is not None:
             sampling_kwargs["lora_request"] = lora_request
