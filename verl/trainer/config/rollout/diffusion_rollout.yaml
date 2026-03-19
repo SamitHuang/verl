@@ -136,6 +136,34 @@ val_kwargs:
   # random seed for validation
   seed: 42
 
+# [Experimental] agent loop based rollout configs
+agent:
+
+  # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
+  _target_: verl.workers.config.AgentLoopConfig
+
+  # Number of agent loop workers
+  num_workers: 8
+
+  # default agent loop to use if `agent_name` not set in RL dataset
+  default_agent_loop: single_turn_agent
+
+  # custom agent loop config path, which should contain list of configs to initialize AgentLoop instances.
+  # https://hydra.cc/docs/advanced/instantiate_objects/overview/
+  agent_loop_config_path: null
+
+  # custom async server configs
+  custom_async_server:
+
+    # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
+    _target_: verl.workers.config.CustomAsyncServerConfig
+
+    # Path to the custom async server implementation
+    path: null
+
+    # Class name of the custom async server class (e.g. AsyncvLLMServer)
+    name: null
+
 # Checkpoint Engine config for update weights from trainer to rollout
 checkpoint_engine:
 
