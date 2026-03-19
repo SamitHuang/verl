@@ -83,50 +83,14 @@ algorithm:
   # Discount factor for future rewards
   gamma: 1.0
 
-  # Trade-off between bias and variance in the GAE estimator
-  lam: 1.0
-
   # Advantage estimator type: "gae", "grpo", "reinforce_plus_plus", etc.
   adv_estimator: gae
 
   # Whether to normalize advantages by std (specific to GRPO)
   norm_adv_by_std_in_grpo: True
 
-  # Whether to enable in-reward KL penalty
-  use_kl_in_reward: False
-
   # How to estimate KL divergence: "kl", "abs", "mse", "low_var_kl", or "full"
   kl_penalty: kl
-
-  # KL control configuration
-  kl_ctrl:
-
-    # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
-    _target_: verl.trainer.config.KLControlConfig
-
-    # KL control type: "fixed" or "adaptive"
-    type: fixed
-
-    # Initial coefficient for KL penalty
-    kl_coef: 0.001
-
-    # Horizon value for adaptive controller (if enabled)
-    horizon: 10000
-
-    # Target KL divergence (used for adaptive controller)
-    target_kl: 0.1
-
-  # Whether to enable preference feedback PPO
-  use_pf_ppo: False
-
-  # Preference feedback PPO settings
-  pf_ppo:
-
-    # Method for reweighting samples: "pow", "max_min", or "max_random"
-    reweight_method: pow
-
-    # Power used for weight scaling in "pow" method
-    weight_pow: 2.0
 
   # Whether to normalize advantages using global standard deviation
   global_std: True
@@ -147,7 +111,7 @@ trainer:
   project_name: verl_examples
 
   # Experiment name for run identification in tracking tools
-  experiment_name: gsm8k
+  experiment_name: ocr
 
   # Logging backends to use: "console", "wandb", etc.
   logger: ["console", "wandb"]
