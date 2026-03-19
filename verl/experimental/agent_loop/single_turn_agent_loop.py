@@ -91,7 +91,8 @@ class DiffusionSingleTurnAgentLoop(AgentLoopBase):
     async def run(self, sampling_params: dict[str, Any], **kwargs) -> DiffusionAgentLoopOutput:
         raw_prompt = kwargs["raw_prompt"]
 
-        if self.config.actor_rollout_ref.rollout.guidance_scale > 0:
+        true_cfg_scale = self.config.actor_rollout_ref.model.extra_configs.get("true_cfg_scale", 0)
+        if true_cfg_scale > 0:
             raw_negative_prompt = kwargs["raw_negative_prompt"]
         else:
             raw_negative_prompt = None

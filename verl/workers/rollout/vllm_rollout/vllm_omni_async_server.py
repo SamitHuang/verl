@@ -52,10 +52,7 @@ _OMNI_DIRECT_DIFFUSION_PARAMS = {
     "max_sequence_length",
 }
 
-_OMNI_DIFFUSION_RENAME_MAP = {
-    "guidance_scale": "true_cfg_scale",
-    "max_model_len": "max_sequence_length",
-}
+_OMNI_DIFFUSION_RENAME_MAP: dict[str, str] = {}
 
 
 class vLLMOmniHttpServer(vLLMHttpServer):

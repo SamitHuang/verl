@@ -78,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--height", type=int, default=512, help="Requested image height.")
     parser.add_argument("--width", type=int, default=512, help="Requested image width.")
     parser.add_argument("--num-inference-steps", type=int, default=10, help="Number of diffusion denoising steps.")
-    parser.add_argument("--guidance-scale", type=float, default=4.0, help="Classifier-free guidance scale.")
+    parser.add_argument("--true-cfg-scale", type=float, default=4.0, help="True CFG scale for negative-prompt classifier-free guidance.")
     parser.add_argument(
         "--seed",
         type=int,
@@ -145,7 +145,10 @@ def build_config(args: argparse.Namespace) -> DictConfig:
 
     config.actor_rollout_ref.model.path = model_path
     config.actor_rollout_ref.model.tokenizer_path = tokenizer_path
+    max_length = args.max_prompt_tokens + PROMPT_TEMPLATE_ENCODE_START_IDX
     with open_dict(config.actor_rollout_ref.model.extra_configs):
+        config.actor_rollout_ref.model.extra_configs.true_cfg_scale = args.true_cfg_scale
+        config.actor_rollout_ref.model.extra_configs.max_sequence_length = max_length
         config.actor_rollout_ref.model.extra_configs.noise_level = args.noise_level
     config.actor_rollout_ref.rollout.name = "vllm_omni"
     config.actor_rollout_ref.rollout.mode = "async"
@@ -154,7 +157,6 @@ def build_config(args: argparse.Namespace) -> DictConfig:
     config.actor_rollout_ref.rollout.height = args.height
     config.actor_rollout_ref.rollout.width = args.width
     config.actor_rollout_ref.rollout.num_inference_steps = args.num_inference_steps
-    config.actor_rollout_ref.rollout.guidance_scale = args.guidance_scale
     config.actor_rollout_ref.rollout.agent.num_workers = args.agent_num_workers
     config.actor_rollout_ref.rollout.agent.default_agent_loop = "diffusion_single_turn_agent"
     config.actor_rollout_ref.rollout.calculate_log_probs = True
@@ -165,7 +167,6 @@ def build_config(args: argparse.Namespace) -> DictConfig:
     config.trainer.n_gpus_per_node = args.gpus_per_node
     config.actor_rollout_ref.rollout.n_gpus_per_node = args.gpus_per_node
 
-    max_length = args.max_prompt_tokens + PROMPT_TEMPLATE_ENCODE_START_IDX
     config.data.apply_chat_template_kwargs = dict(max_length=max_length, padding=True, truncation=True)
     config.data.max_prompt_length = max_length
     config.actor_rollout_ref.rollout.max_model_len = max_length
@@ -292,7 +293,7 @@ def build_report(
             "Confirm prompt/output count equals prompt_count * rollouts_per_prompt.",
             "Confirm image ranges look sane and no saved image is empty or corrupted.",
             "Confirm rollout artifacts such as all_latents, all_timesteps, prompt_embeds, and rollout_log_probs are present.",
-            "If guidance_scale > 0, confirm negative-prompt CFG path is active and outputs are stable enough for spot checks.",
+            "If true_cfg_scale > 0, confirm negative-prompt CFG path is active and outputs are stable enough for spot checks.",
         ],
     }
 
@@ -371,7 +372,7 @@ def main() -> None:
         prompt_specs,
         system_prompt=args.system_prompt,
         n=args.n,
-        use_negative_prompt=args.guidance_scale > 0,
+        use_negative_prompt=args.true_cfg_scale > 0,
         validate=args.seed is not None,
     )
 
@@ -398,7 +399,7 @@ def main() -> None:
             "height": args.height,
             "width": args.width,
             "num_inference_steps": args.num_inference_steps,
-            "guidance_scale": args.guidance_scale,
+            "true_cfg_scale": args.true_cfg_scale,
             "seed": args.seed,
             "noise_level": args.noise_level,
             "tensor_parallel_size": args.tensor_parallel_size,

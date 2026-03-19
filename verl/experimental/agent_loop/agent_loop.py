@@ -993,14 +993,14 @@ class DiffusionAgentLoopWorker:
         """
         config = self.rollout_config
 
-        # Keep the agent loop backend-neutral. Backend/model-specific translation
-        # happens in the rollout server, which can merge model.extra_configs.
+        # Keep the agent loop backend-neutral.  Only universal diffusion params
+        # are passed here.  Model-specific params (true_cfg_scale, guidance_scale,
+        # max_sequence_length, …) live in model.extra_configs and are merged by
+        # the rollout server's backend translation layer.
         sampling_params = dict(
             logprobs=config.calculate_log_probs,
             height=config.height,
             width=config.width,
-            guidance_scale=config.guidance_scale,
-            max_model_len=config.max_model_len,
         )
 
         # override sampling params for validation
