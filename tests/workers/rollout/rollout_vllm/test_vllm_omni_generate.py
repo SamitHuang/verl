@@ -141,10 +141,9 @@ def init_server():
             "height": 512,
             "width": 512,
             "num_inference_steps": 10,
-            "calculate_log_probs": True,
             "engine_kwargs": {
                 "vllm_omni": {
-                    "custom_pipeline": "verl.models.diffusers_model.vllm_omni.QwenImagePipelineWithLogProb",
+                    "custom_pipeline": "verl.models.diffusion.vllm_omni.QwenImagePipelineWithLogProb",
                 }
             },
         }
@@ -152,7 +151,7 @@ def init_server():
 
     model_cfg = OmegaConf.create(
         {
-            "_target_": "verl.workers.config.DiffusersModelConfig",
+            "_target_": "verl.workers.config.DiffusionModelConfig",
             "path": model_path,
             "tokenizer_path": os.path.join(model_path, "tokenizer"),
             "trust_remote_code": True,

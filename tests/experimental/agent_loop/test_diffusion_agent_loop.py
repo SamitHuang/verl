@@ -37,6 +37,7 @@ def init_config() -> DictConfig:
     config.actor_rollout_ref.rollout.enforce_eager = True
     config.actor_rollout_ref.rollout.n = 4
     config.actor_rollout_ref.rollout.num_inference_steps = 10
+
     config.actor_rollout_ref.rollout.agent.num_workers = 2
     config.actor_rollout_ref.rollout.agent.default_agent_loop = "diffusion_single_turn_agent"
     tokenizer_max_length = 1024
@@ -50,12 +51,17 @@ def init_config() -> DictConfig:
         config.actor_rollout_ref.model.extra_configs.sde_window_size = 2
         config.actor_rollout_ref.model.extra_configs.sde_window_range = [0, 5]
     config.actor_rollout_ref.rollout.calculate_log_probs = True
+
     config.actor_rollout_ref.rollout.nnodes = 1
 
     qwen_pipeline = "verl.models.diffusers_model.vllm_omni.pipeline_qwenimage.QwenImagePipelineWithLogProb"
     config.actor_rollout_ref.rollout.engine_kwargs.vllm_omni = {"custom_pipeline": qwen_pipeline}
     config.reward.reward_manager.name = "image"
     config.trainer.n_gpus_per_node = 4
+
+    tokenizer_max_length = 1024
+    prompt_template_encode_start_idx = 34
+    max_length = tokenizer_max_length + prompt_template_encode_start_idx
 
     config.data.apply_chat_template_kwargs = dict(max_length=max_length, padding=True, truncation=True)
     config.data.max_prompt_length = max_length

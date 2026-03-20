@@ -29,7 +29,7 @@ from vllm_omni.outputs import OmniRequestOutput
 
 from verl.utils.config import omega_conf_to_dataclass
 from verl.utils.tokenizer import normalize_token_ids
-from verl.workers.config import DiffusersModelConfig, DiffusionRolloutConfig
+from verl.workers.config import DiffusionModelConfig, DiffusionRolloutConfig
 from verl.workers.rollout.diffusion_sampling_utils import build_diffusion_backend_sampling_params
 from verl.workers.rollout.replica import ImageOutput
 from verl.workers.rollout.utils import run_uvicorn
@@ -66,8 +66,8 @@ class vLLMOmniHttpServer(vLLMHttpServer):
     # -----------------------------------------------------------------------
 
     def _init_model_config(self, model_config):
-        """Use DiffusersModelConfig instead of HFModelConfig."""
-        return omega_conf_to_dataclass(model_config, dataclass_type=DiffusersModelConfig)
+        """Use DiffusionModelConfig instead of HFModelConfig."""
+        return omega_conf_to_dataclass(model_config, dataclass_type=DiffusionModelConfig)
 
     def _validate_configs(self) -> None:
         """No-op: diffusion models don't have max_position_embeddings."""
@@ -81,6 +81,10 @@ class vLLMOmniHttpServer(vLLMHttpServer):
     # -----------------------------------------------------------------------
     # launch_server hooks
     # -----------------------------------------------------------------------
+
+    def _get_override_generation_config(self) -> dict:
+        """Diffusion models have no LLM sampling params; return empty dict."""
+        return {}
 
     def _get_engine_kwargs_key(self) -> str:
         return "vllm_omni"
@@ -253,12 +257,17 @@ class vLLMOmniReplica(vLLMReplica):
         self,
         replica_rank: int,
         config: DiffusionRolloutConfig,
-        model_config: DiffusersModelConfig,
+        model_config: DiffusionModelConfig,
         gpus_per_node: int = 8,
         is_reward_model: bool = False,
     ):
         super().__init__(replica_rank, config, model_config, gpus_per_node, is_reward_model)
         self.server_class = ray.remote(vLLMOmniHttpServer)
+
+    def _validate_launch_requirements(self) -> None:
+        """No-op: the parent check validates vllm.__version__ which is
+        irrelevant for vllm-omni (a separate package)."""
+        pass
 
     def _get_server_name_prefix(self) -> str:
         return "vllm_omni_"

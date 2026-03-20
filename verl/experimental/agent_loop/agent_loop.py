@@ -46,7 +46,7 @@ from verl.utils.rollout_trace import (
     rollout_trace_op,
 )
 from verl.utils.tokenizer import normalize_token_ids
-from verl.workers.config import DiffusersModelConfig, HFModelConfig, RolloutConfig
+from verl.workers.config import DiffusionModelConfig, HFModelConfig, RolloutConfig
 from verl.workers.rollout.replica import ImageOutput, TokenOutput, get_rollout_replica_class
 
 logger = logging.getLogger(__file__)
@@ -948,7 +948,7 @@ class DiffusionAgentLoopWorker:
         self.config = config
         rollout_config, model_config = _get_rollout_and_model_config(config)
         self.rollout_config: RolloutConfig = omega_conf_to_dataclass(rollout_config)
-        self.model_config: DiffusersModelConfig = omega_conf_to_dataclass(model_config)
+        self.model_config: DiffusionModelConfig = omega_conf_to_dataclass(model_config)
 
         # for recipe to change
         if not hasattr(self, "server_manager"):
@@ -985,10 +985,10 @@ class DiffusionAgentLoopWorker:
             DataProto: Output batch.
             - prompts: [bsz, prompt_length], prompt token ids from dataset.
             - responses: [bsz, channel, height, width],  output images from diffusion generation.
-            - rm_scores: [bsz, 1], reward model scores.
+            - rm_scores (optional): [bsz, 1], reward model scores.
             - meta_info:
               - metrics: List[dict], per-sample agent loop metrics.
-              - reward_extra_keys: List[str], keys for reward extra info for logging/validation.
+              - reward_extra_keys (optional): List[str], keys for reward extra info for logging/validation.
             ...
         """
         config = self.rollout_config
@@ -998,7 +998,6 @@ class DiffusionAgentLoopWorker:
         # max_sequence_length, …) live in model.extra_configs and are merged by
         # the rollout server's backend translation layer.
         sampling_params = dict(
-            logprobs=config.calculate_log_probs,
             height=config.height,
             width=config.width,
         )
@@ -1069,7 +1068,6 @@ class DiffusionAgentLoopWorker:
 
         extra_fields["raw_prompt"] = kwargs["raw_prompt"]
 
-        # TODO(wuxibin): remove padding and use tensordict.
         self.tokenizer.padding_side = "left"
         prompt_output = self.tokenizer.pad(
             {"input_ids": output.prompt_ids},
