@@ -141,6 +141,7 @@ def init_server():
             "height": 512,
             "width": 512,
             "num_inference_steps": 10,
+            "guidance_scale": 4.0,
             "engine_kwargs": {
                 "vllm_omni": {
                     "custom_pipeline": "verl.models.diffusion.vllm_omni.QwenImagePipelineWithLogProb",
@@ -202,7 +203,7 @@ def test_generate(init_server):
             prompt_ids=prompt_ids,
             sampling_params={
                 "num_inference_steps": 10,
-                "true_cfg_scale": 4.0,
+                "guidance_scale": 4.0,
                 "height": 512,
                 "width": 512,
             },
@@ -237,7 +238,7 @@ def test_generate_with_logprobs(init_server):
             prompt_ids=prompt_ids,
             sampling_params={
                 "num_inference_steps": 10,
-                "true_cfg_scale": 4.0,
+                "guidance_scale": 4.0,
                 "height": 512,
                 "width": 512,
                 "logprobs": True,
@@ -279,7 +280,7 @@ def test_generate_concurrent(init_server):
             prompt_ids=_tokenize_prompt(prompts[i]),
             sampling_params={
                 "num_inference_steps": 10,
-                "true_cfg_scale": 4.0,
+                "guidance_scale": 4.0,
                 "height": 512,
                 "width": 512,
             },
