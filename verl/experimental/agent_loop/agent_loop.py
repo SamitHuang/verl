@@ -241,8 +241,8 @@ class DiffusionAgentLoopOutput(BaseModel):
 
     prompt_ids: list[int]
     """Prompt token ids."""
-    response_image: list[list[list[float]]]
-    """Response image (CHW format)."""
+    response_diffusion_output: list[list[list[float]]] | list[list[list[list[float]]]]
+    """Response diffusion output: image (CHW format) / video (TCHW format)."""
     response_logprobs: Optional[list[float]] = None
     """Log probabilities for the response tokens."""
     multi_modal_data: Optional[dict[str, Any]] = None
@@ -264,8 +264,8 @@ class _InternalDiffusionAgentLoopOutput(DiffusionAgentLoopOutput):
 
     prompt_ids: torch.Tensor
     """Padded prompt token ids."""
-    response_image: torch.Tensor
-    """Response image (NCHW format)."""
+    response_diffusion_output: torch.Tensor
+    """Response diffusion output: image (NCHW format) / video (NTCHW format)."""
     input_ids: torch.Tensor
     """Padded input ids(prompt_ids)."""
     attention_mask: torch.Tensor
@@ -1027,6 +1027,8 @@ class DiffusionAgentLoopWorker:
         config: DictConfig,
         servers: list[tuple[str, ray.actor.ActorHandle]],
         load_balancer_handle: ray.actor.ActorHandle,
+        teacher_servers: list[tuple[str, ray.actor.ActorHandle]] = None,
+        teacher_load_balancer_handle: ray.actor.ActorHandle = None,
         reward_loop_worker_handles: list[ray.actor.ActorHandle] = None,
     ):
         """Initialize agent loop manager.
@@ -1034,6 +1036,8 @@ class DiffusionAgentLoopWorker:
             config (DictConfig): YAML config.
             servers (list[tuple[str, ray.actor.ActorHandle]]): (address, handle) pairs for each LLM server.
             load_balancer_handle (ray.actor.ActorHandle): shared global load balancer actor.
+            teacher_servers (list[tuple[str, ray.actor.ActorHandle]]): (address, handle) pairs for each teacher server.
+            teacher_load_balancer_handle (ray.actor.ActorHandle): global load balancer actor for teacher servers.
             reward_loop_worker_handles (list[ray.actor.ActorHandle]): Actor handles for streaming reward computation.
         """
         self.config = config
@@ -1171,9 +1175,7 @@ class DiffusionAgentLoopWorker:
             prompt_output["input_ids"] = prompt_output["input_ids"].unsqueeze(0)
             prompt_output["attention_mask"] = prompt_output["attention_mask"].unsqueeze(0)
 
-        response_image = torch.tensor(output.response_image)
-        if response_image.dim() == 3:
-            response_image = response_image.unsqueeze(0)
+        response_diffusion_output = torch.tensor(output.response_diffusion_output).unsqueeze(0)
 
         response_logprobs = None
         if output.response_logprobs is not None:
@@ -1185,7 +1187,7 @@ class DiffusionAgentLoopWorker:
         await self._compute_score(
             output,
             prompts=input_ids,
-            responses=response_image,
+            responses=response_diffusion_output,
             attention_mask=attention_mask,
             input_ids=input_ids,
             kwargs=kwargs,
@@ -1196,7 +1198,7 @@ class DiffusionAgentLoopWorker:
 
         return _InternalDiffusionAgentLoopOutput(
             prompt_ids=input_ids,
-            response_image=response_image,
+            response_diffusion_output=response_diffusion_output,
             input_ids=input_ids,
             attention_mask=attention_mask,
             response_logprobs=response_logprobs,
@@ -1244,7 +1246,7 @@ class DiffusionAgentLoopWorker:
         """Process the padded outputs from _run_agent_loop and combine them into a batch."""
         # Convert lists back to tensors and stack them to create a batch.
         prompt_ids = torch.cat([input.prompt_ids for input in inputs], dim=0)
-        response_image = torch.cat([input.response_image for input in inputs], dim=0)
+        response_diffusion_output = torch.cat([input.response_diffusion_output for input in inputs], dim=0)
         attention_mask = torch.cat([input.attention_mask for input in inputs], dim=0)
         input_ids = torch.cat([input.input_ids for input in inputs], dim=0)
         optional_outputs = {}
@@ -1261,7 +1263,7 @@ class DiffusionAgentLoopWorker:
         batch = TensorDict(
             {
                 "prompts": prompt_ids,  # [bsz, prompt_length]
-                "responses": response_image,  # [bsz, channel, height, width]
+                "responses": response_diffusion_output,  # [bsz, channel, height, width] or [bsz, time, channel, height, width]
                 "input_ids": input_ids,  # [bsz, prompt_length]
                 "attention_mask": attention_mask,  # [bsz, prompt_length]
                 **optional_outputs,

@@ -122,7 +122,7 @@ class DiffusionSingleTurnAgentLoop(AgentLoopBase):
 
         output = DiffusionAgentLoopOutput(
             prompt_ids=prompt_ids,
-            response_image=output.diffusion_output,
+            response_diffusion_output=output.diffusion_output,
             response_logprobs=output.log_probs,
             multi_modal_data=multi_modal_data,
             num_turns=2,
