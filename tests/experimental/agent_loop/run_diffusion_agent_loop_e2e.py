@@ -159,7 +159,6 @@ def build_config(args: argparse.Namespace) -> DictConfig:
     config.actor_rollout_ref.rollout.num_inference_steps = args.num_inference_steps
     config.actor_rollout_ref.rollout.agent.num_workers = args.agent_num_workers
     config.actor_rollout_ref.rollout.agent.default_agent_loop = "diffusion_single_turn_agent"
-    config.actor_rollout_ref.rollout.calculate_log_probs = True
     config.actor_rollout_ref.rollout.nnodes = 1
     config.actor_rollout_ref.rollout.tensor_model_parallel_size = args.tensor_parallel_size
     config.actor_rollout_ref.rollout.engine_kwargs.vllm_omni = {"custom_pipeline": args.custom_pipeline}
