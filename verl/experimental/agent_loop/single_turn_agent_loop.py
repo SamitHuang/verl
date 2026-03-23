@@ -88,7 +88,10 @@ class SingleTurnAgentLoop(AgentLoopBase):
 class DiffusionSingleTurnAgentLoop(AgentLoopBase):
     """Agent loop for diffusion model serving."""
 
-    _DATASET_ONLY_KEYS = frozenset({
+    # Keys from non_tensor_batch that are pipeline/dataset metadata and must
+    # NOT be forwarded to server_manager.generate() (which passes **kwargs
+    # down to the vllm-omni server that has a fixed signature).
+    _KEYS_EXCLUDED_FROM_GENERATE = frozenset({
         "raw_prompt",
         "raw_negative_prompt",
         "data_source",
@@ -99,7 +102,7 @@ class DiffusionSingleTurnAgentLoop(AgentLoopBase):
     async def run(self, sampling_params: dict[str, Any], **kwargs) -> DiffusionAgentLoopOutput:
         raw_prompt = kwargs.pop("raw_prompt")
         raw_negative_prompt = kwargs.pop("raw_negative_prompt", None)
-        for key in self._DATASET_ONLY_KEYS:
+        for key in self._KEYS_EXCLUDED_FROM_GENERATE:
             kwargs.pop(key, None)
 
         # 1. extract images and videos from messages
