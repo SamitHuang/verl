@@ -1456,12 +1456,6 @@ class AgentLoopManager:
         load_balancer_handle = self.global_load_balancer
         servers = list(zip(self.server_addresses, self.server_handles, strict=True))
 
-        worker_kwargs = dict(
-            config=self.config,
-            servers=servers,
-            load_balancer_handle=load_balancer_handle,
-            reward_loop_worker_handles=self.reward_loop_worker_handles,
-        )
         if self.distillation_enabled:
             teacher_server_handles = self.teacher_model_manager.server_handles
             teacher_server_addresses = self.teacher_model_manager.server_addresses
