@@ -91,13 +91,15 @@ class DiffusionSingleTurnAgentLoop(AgentLoopBase):
     # Keys from non_tensor_batch that are pipeline/dataset metadata and must
     # NOT be forwarded to server_manager.generate() (which passes **kwargs
     # down to the vllm-omni server that has a fixed signature).
-    _KEYS_EXCLUDED_FROM_GENERATE = frozenset({
-        "raw_prompt",
-        "raw_negative_prompt",
-        "data_source",
-        "reward_model",
-        "index",
-    })
+    _KEYS_EXCLUDED_FROM_GENERATE = frozenset(
+        {
+            "raw_prompt",
+            "raw_negative_prompt",
+            "data_source",
+            "reward_model",
+            "index",
+        }
+    )
 
     async def run(self, sampling_params: dict[str, Any], **kwargs) -> DiffusionAgentLoopOutput:
         raw_prompt = kwargs.pop("raw_prompt")

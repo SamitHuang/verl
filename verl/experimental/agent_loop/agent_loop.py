@@ -48,9 +48,14 @@ from verl.utils.rollout_trace import (
     rollout_trace_op,
 )
 from verl.utils.tokenizer import normalize_token_ids
-from verl.workers.config import DiffusionModelConfig, DistillationConfig, DistillationLossConfig, HFModelConfig, RolloutConfig
+from verl.workers.config import (
+    DiffusionModelConfig,
+    DistillationConfig,
+    DistillationLossConfig,
+    HFModelConfig,
+    RolloutConfig,
+)
 from verl.workers.rollout.replica import DiffusionOutput, TokenOutput, get_rollout_replica_class
-
 
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
@@ -1268,7 +1273,8 @@ class DiffusionAgentLoopWorker:
         batch = TensorDict(
             {
                 "prompts": prompt_ids,  # [bsz, prompt_length]
-                "responses": response_diffusion_output,  # [bsz, channel, height, width] or [bsz, time, channel, height, width]
+                # responses: [bsz, C, H, W] image or [bsz, T, C, H, W] video
+                "responses": response_diffusion_output,
                 "input_ids": input_ids,  # [bsz, prompt_length]
                 "attention_mask": attention_mask,  # [bsz, prompt_length]
                 **optional_outputs,
