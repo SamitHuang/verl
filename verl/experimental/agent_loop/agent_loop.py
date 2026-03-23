@@ -49,7 +49,7 @@ from verl.utils.rollout_trace import (
 )
 from verl.utils.tokenizer import normalize_token_ids
 from verl.workers.config import DiffusionModelConfig, DistillationConfig, DistillationLossConfig, HFModelConfig, RolloutConfig
-from verl.workers.rollout.replica import ImageOutput, TokenOutput, get_rollout_replica_class
+from verl.workers.rollout.replica import DiffusionOutput, TokenOutput, get_rollout_replica_class
 
 
 logger = logging.getLogger(__file__)
@@ -146,7 +146,7 @@ class AsyncLLMServerManager:
         image_data: Optional[list[Any]] = None,
         video_data: Optional[list[Any]] = None,
         **kwargs: Any,
-    ) -> TokenOutput | ImageOutput:
+    ) -> TokenOutput | DiffusionOutput:
         """Generate tokens from prompt ids.
 
         Args:
@@ -155,11 +155,11 @@ class AsyncLLMServerManager:
             sampling_params (Dict[str, Any]): Sampling parameters for the chat completion.
 
         Returns:
-            TokenOutput | ImageOutput: token or image output
+            TokenOutput | DiffusionOutput: token or diffusion output
         """
         server_id, server = await self._acquire_server(request_id)
         try:
-            output: TokenOutput | ImageOutput = await server.generate.remote(
+            output: TokenOutput | DiffusionOutput = await server.generate.remote(
                 request_id=uuid4().hex,  # use new request_id for each turn
                 prompt_ids=prompt_ids,
                 sampling_params=sampling_params,
