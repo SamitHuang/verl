@@ -1061,6 +1061,10 @@ class DiffusionAgentLoopWorker:
         self.tokenizer = self.model_config.tokenizer
         self.processor = self.model_config.processor
 
+        self.max_prompt_embed_length = self.model_config.extra_configs.get(
+            "max_sequence_length", self.rollout_config.prompt_length
+        )
+
         agent_loop_config_path = self.rollout_config.agent.agent_loop_config_path
         if agent_loop_config_path:
             resolved_path = resolve_config_path(agent_loop_config_path)
@@ -1154,10 +1158,10 @@ class DiffusionAgentLoopWorker:
             if isinstance(v, torch.Tensor):
                 # handle prompt embedding padding
                 if k in ["prompt_embeds", "negative_prompt_embeds"]:
-                    pad_tuple = (0, 0, 0, self.config.actor_rollout_ref.rollout.prompt_length - v.shape[0])
+                    pad_tuple = (0, 0, 0, self.max_prompt_embed_length - v.shape[0])
                     v = F.pad(v, pad_tuple, value=0)
                 elif k in ["prompt_embeds_mask", "negative_prompt_embeds_mask"]:
-                    pad_tuple = (0, self.config.actor_rollout_ref.rollout.prompt_length - v.shape[0])
+                    pad_tuple = (0, self.max_prompt_embed_length - v.shape[0])
                     v = F.pad(v, pad_tuple, value=0)
                 extra_fields[k] = v.unsqueeze(0)
             else:
