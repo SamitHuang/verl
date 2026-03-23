@@ -1089,10 +1089,6 @@ class DiffusionAgentLoopWorker:
         """
         config = self.rollout_config
 
-        # Keep the agent loop backend-neutral.  Only universal diffusion params
-        # are passed here.  Model-specific params (true_cfg_scale, guidance_scale,
-        # max_sequence_length, …) live in model.extra_configs and are merged by
-        # the rollout server's backend translation layer.
         sampling_params = dict(
             height=config.height,
             width=config.width,
@@ -1223,10 +1219,10 @@ class DiffusionAgentLoopWorker:
         if output.reward_score is None and enable_async_reward:
             batch = TensorDict(
                 {
-                    "prompts": prompts,  # [1, prompt_length]
-                    "responses": responses,  # [1, C, H, W] or [1, T, C, H, W]
-                    "attention_mask": attention_mask,  # [1, prompt_length]
-                    "input_ids": input_ids,  # [1, prompt_length]
+                    "prompts": prompts,  # [bsz, prompt_length]
+                    "responses": responses,  # [bsz, C, H, W] or [bsz, T, C, H, W]
+                    "attention_mask": attention_mask,  # [bsz, prompt_length]
+                    "input_ids": input_ids,  # [bsz, prompt_length]
                 },
                 batch_size=1,
             )

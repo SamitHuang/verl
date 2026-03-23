@@ -280,9 +280,6 @@ class DiffusionModelConfig(BaseConfig):
     num_inference_steps: int = 10
 
     # extra configs for algorithm specific features.
-    # Model-specific diffusion sampling params (e.g. true_cfg_scale, guidance_scale,
-    # max_sequence_length, noise_level) should be placed here rather than in
-    # DiffusionRolloutConfig, so the agent loop stays backend-neutral.
     extra_configs: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
