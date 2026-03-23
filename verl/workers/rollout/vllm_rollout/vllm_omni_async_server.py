@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
-import dataclasses
 import logging
 from dataclasses import asdict
 from typing import Any, Optional
@@ -32,7 +31,6 @@ from verl.utils.config import omega_conf_to_dataclass
 from verl.utils.tokenizer import normalize_token_ids
 from verl.workers.config import DiffusionModelConfig, DiffusionRolloutConfig
 from verl.workers.rollout.replica import DiffusionOutput
-
 from verl.workers.rollout.utils import run_uvicorn
 from verl.workers.rollout.vllm_rollout.utils import (
     VLLM_LORA_INT_ID,
@@ -43,8 +41,6 @@ from verl.workers.rollout.vllm_rollout.vllm_async_server import vLLMHttpServer, 
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
-
-_OMNI_FIELDS = {f.name for f in dataclasses.fields(OmniDiffusionSamplingParams)}
 
 
 class vLLMOmniHttpServer(vLLMHttpServer):
@@ -165,20 +161,18 @@ class vLLMOmniHttpServer(vLLMHttpServer):
         if multi_modal_data:
             custom_prompt["extra_args"] = {"multi_modal_data": multi_modal_data}
 
-        omni_kwargs: dict[str, Any] = {}
+        # Build OmniDiffusionSamplingParams from the incoming dict
+        sampling_kwargs: dict[str, Any] = {}
         extra_args: dict[str, Any] = {}
         for k, v in sampling_params.items():
-            if v is None:
-                continue
-            if k in _OMNI_FIELDS:
-                omni_kwargs[k] = v
+            if hasattr(OmniDiffusionSamplingParams, k):
+                sampling_kwargs[k] = v
             else:
                 extra_args[k] = v
-        if extra_args:
-            omni_kwargs["extra_args"] = extra_args
+        sampling_kwargs["extra_args"] = extra_args
         if lora_request is not None:
-            omni_kwargs["lora_request"] = lora_request
-        diffusion_sampling_params = OmniDiffusionSamplingParams(**omni_kwargs)
+            sampling_kwargs["lora_request"] = lora_request
+        diffusion_sampling_params = OmniDiffusionSamplingParams(**sampling_kwargs)
 
         # Call AsyncOmni.generate() with the correct API
         generator = self.engine.generate(
