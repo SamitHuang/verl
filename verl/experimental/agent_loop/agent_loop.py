@@ -1091,18 +1091,17 @@ class DiffusionAgentLoopWorker:
         """
         config = self.rollout_config
 
-        sampling_params = dict(
+        sampling_params = dict(self.model_config.extra_configs)
+        sampling_params.update(
             height=config.height,
             width=config.width,
+            num_inference_steps=config.num_inference_steps,
         )
 
-        # override sampling params for validation
         if batch.meta_info.get("validate", False):
             sampling_params["num_inference_steps"] = config.val_kwargs.num_inference_steps
             sampling_params["seed"] = config.val_kwargs.seed
             sampling_params["noise_level"] = config.val_kwargs.noise_level
-        else:
-            sampling_params["num_inference_steps"] = config.num_inference_steps
 
         # by default, we assume it's a single turn agent
         if "agent_name" not in batch.non_tensor_batch:
