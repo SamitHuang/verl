@@ -1,7 +1,10 @@
 defaults:
+
   - rollout
+
   - _self_
 
+# Target class for this configuration
 _target_: verl.workers.config.DiffusionRolloutConfig
 
 # image height for diffusion model rollout
@@ -15,11 +18,12 @@ num_inference_steps: 10
 
 # Extra inference engine arguments: add vllm_omni for diffusion
 engine_kwargs:
+
   vllm_omni: {}
 
 # Sampling parameters used during validation (diffusion-specific).
 val_kwargs:
-  
+
   # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
   _target_: verl.workers.config.DiffusionSamplingConfig
 
