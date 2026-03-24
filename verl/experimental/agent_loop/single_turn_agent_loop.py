@@ -16,7 +16,8 @@ import os
 from typing import Any
 from uuid import uuid4
 
-from verl.experimental.agent_loop.agent_loop import AgentLoopBase, AgentLoopOutput, DiffusionAgentLoopOutput, register
+from verl.experimental.agent_loop.agent_loop import AgentLoopBase, AgentLoopOutput, register
+from verl.experimental.agent_loop.diffusion_agent_loop import DiffusionAgentLoopOutput
 from verl.utils.profiler import simple_timer
 from verl.workers.rollout.replica import TokenOutput
 

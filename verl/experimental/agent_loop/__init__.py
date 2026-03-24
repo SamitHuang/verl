@@ -17,8 +17,8 @@ from .agent_loop import (
     AgentLoopManager,
     AgentLoopWorker,
     AsyncLLMServerManager,
-    DiffusionAgentLoopWorker,
 )
+from .diffusion_agent_loop import DiffusionAgentLoopWorker
 from .single_turn_agent_loop import SingleTurnAgentLoop
 from .tool_agent_loop import ToolAgentLoop
 
