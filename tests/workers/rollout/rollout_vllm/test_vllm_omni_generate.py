@@ -96,7 +96,6 @@ def init_server():
             "height": 512,
             "width": 512,
             "num_inference_steps": 10,
-            "guidance_scale": 4.0,
             "engine_kwargs": {
                 "vllm_omni": {
                     "custom_pipeline": "examples.flowgrpo_trainer.pipeline_qwenimage.QwenImagePipelineWithLogProb",
