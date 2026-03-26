@@ -164,6 +164,7 @@ class DiffusionAgentLoopWorker:
             height=config.height,
             width=config.width,
             num_inference_steps=config.num_inference_steps,
+            calculate_log_probs=config.calculate_log_probs,
         )
 
         if batch.meta_info.get("validate", False):
