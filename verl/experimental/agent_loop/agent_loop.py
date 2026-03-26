@@ -1018,7 +1018,10 @@ class AgentLoopManager:
         if not hasattr(self, "rollout_replica_class"):
             self.rollout_replica_class = get_rollout_replica_class(self.rollout_config.name)
         if not hasattr(self, "agent_loop_workers_class"):
-            if self.config.actor_rollout_ref.model.model_type == "diffusion_model":
+            if (
+                OmegaConf.select(self.config, "actor_rollout_ref.model.model_type", default=None)
+                == "diffusion_model"
+            ):
                 from verl.experimental.agent_loop.diffusion_agent_loop import DiffusionAgentLoopWorker
 
                 self.agent_loop_workers_class = ray.remote(DiffusionAgentLoopWorker)
