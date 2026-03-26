@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
+import copy
 import random
 from typing import Any, Optional
 
@@ -31,7 +32,6 @@ from verl.experimental.agent_loop.agent_loop import (
     _agent_loop_registry,
     _get_rollout_and_model_config,
 )
-from verl.utils.chat_template import initialize_system_prompt
 from verl.experimental.agent_loop.utils import resolve_config_path
 from verl.protocol import DataProto
 from verl.utils.config import omega_conf_to_dataclass
@@ -126,9 +126,6 @@ class DiffusionAgentLoopWorker:
         self.tokenizer = self.model_config.tokenizer
         self.processor = self.model_config.processor
 
-        apply_chat_template_kwargs = config.data.get("apply_chat_template_kwargs", {})
-        self._system_prompt = initialize_system_prompt(self.tokenizer, **apply_chat_template_kwargs)
-
         self.max_prompt_embed_length = self.model_config.extra_configs.get(
             "max_sequence_length", self.rollout_config.prompt_length
         )
@@ -205,11 +202,10 @@ class DiffusionAgentLoopWorker:
             config=agent_loop_config,
             trainer_config=DictConfigWrap(config=self.config),
             server_manager=self.server_manager,
-            tokenizer=self.tokenizer,
+            tokenizer=copy.deepcopy(self.tokenizer),
             processor=self.processor,
             dataset_cls=self.dataset_cls,
             data_config=DictConfigWrap(self.config.data),
-            system_prompt=self._system_prompt,
         )
         output: DiffusionAgentLoopOutput = await agent_loop.run(sampling_params, **kwargs)
         return await self._agent_loop_postprocess(output, **kwargs)
