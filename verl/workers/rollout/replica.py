@@ -327,7 +327,10 @@ def _load_vllm():
 
 
 def _load_vllm_omni():
-    from verl.workers.rollout.vllm_rollout.vllm_omni_async_server import vLLMOmniReplica
+    try:
+        from verl.workers.rollout.vllm_rollout.vllm_omni_async_server import vLLMOmniReplica
+    except ImportError as err:
+        raise ImportError("vllm-omni rollout requires vllm-omni to be installed.") from err
 
     return vLLMOmniReplica
 
