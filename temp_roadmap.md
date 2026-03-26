@@ -16,8 +16,7 @@
 - [ ] diffusers FSDP trainer
   - [ ] SP support
 - [ ] VeOmni diffusion trainer as default
-  - [ ] FSDP + SP
-  - [ ] EP (HunyuanImage-3.0)
+  - [ ] Verify parallelism: FSDP + SP (QwenImage), EP (HunyuanImage-3.0)
   - [ ] Support diffusers backend
 - [ ] Fully async trainer for diffusion models, verification
 
