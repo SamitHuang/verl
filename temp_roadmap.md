@@ -1,7 +1,7 @@
 
 2026Q2 roadmap for multi-model generation RL
 
-### Architecture
+### 🛠 Architecture
 
 #### Rollout Engine
 - vLLM-Omni enhancement
@@ -21,7 +21,7 @@
   - [ ] Support diffusers backend
 - [ ] Fully async trainer for diffusion models, verification
 
-### Model & Algorithm Supports
+### 🎨 Model & Algorithm Supports
 - Image Gen (X2I)
   - [ ] QwenImage + FlowGRPO-fast (Dense DiT) [P0]
   - [ ] HunyuanImage 3.0 + MixGRPO (MoE DiT)
@@ -34,11 +34,11 @@
 - Unified Und. & Gen. (UMM)
   - [ ] BAGEL + FlowGRPO   [P0]
 
-### Documentation
+### 📖 Documentation
 - [ ] Quickstart doc for QwenImage FlowGRPO training
 - [ ] How to add a model with vLLM-Omni backend
 - [ ] FlowGRPO/MixGRPO training algorithm doc (Key Components, Configure, Reference Performance, etc)
 
-### Ascend NPU
+### 💠 Ascend NPU
 - [ ] NPU verification
 
