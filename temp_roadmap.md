@@ -1,5 +1,5 @@
 
-2026Q2 Roadmap for multi-model generation RL
+2026Q2 roadmap for multi-model generation RL
 
 ### Architecture
 
