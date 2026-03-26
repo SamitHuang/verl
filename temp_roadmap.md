@@ -32,7 +32,8 @@ Q2 Roadmap for multi-model generation RL support
 - [ ] NPU verification
 
 ### Documentation
-- [ ] Quickstart doc for FlowGRPO training
-- [ ] Algorithms doc for FlowGRPO (Key Components, Configure, Reference Performance, etc)
+- [ ] Quickstart doc for QwenImage FlowGRPO training
+- [ ] How to add a model with vLLM-Omni backend
+- [ ] FlowGRPO algorithms doc (Key Components, Configure, Reference Performance, etc)
 
 
