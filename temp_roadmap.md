@@ -1,5 +1,5 @@
 
-Q2 Roadmap for multi-model generation RL support
+Q2 Roadmap for multi-model generation RL
 
 ### Architecture
 
