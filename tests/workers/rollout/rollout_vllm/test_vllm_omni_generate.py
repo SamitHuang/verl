@@ -99,7 +99,10 @@ def init_server():
             "num_inference_steps": 10,
             "engine_kwargs": {
                 "vllm_omni": {
-                    "custom_pipeline": "examples.flowgrpo_trainer.vllm_omni.pipeline_qwenimage.QwenImagePipelineWithLogProb",
+                    "custom_pipeline": (
+                        "examples.flowgrpo_trainer.vllm_omni.pipeline_qwenimage."
+                        "QwenImagePipelineWithLogProb"
+                    ),
                 }
             },
         }
