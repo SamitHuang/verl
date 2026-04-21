@@ -103,14 +103,16 @@ def preprocess_packed_seqs(
             start_idx = cu_seqlens_padded_cpu[i] // cp_size
             # split to 2 chunks
             d = input_ids[i, attention_mask[i]]
-            input_ids_rmpad[start_idx : start_idx + half_seqlen] = d[
-                half_seqlen * cp_rank : half_seqlen * (cp_rank + 1)
-            ]
+            first_start = half_seqlen * cp_rank
+            first_end = min(half_seqlen * (cp_rank + 1), d.shape[0])
+            first_len = max(first_end - first_start, 0)
+            if first_len > 0:
+                input_ids_rmpad[start_idx : start_idx + first_len] = d[first_start:first_end]
 
             remain_start = seqlen_padded_i - half_seqlen * (cp_rank + 1)
             remain_end = seqlen_padded_i - half_seqlen * cp_rank
             remain_end = min(remain_end, d.shape[0])
-            remain_len = remain_end - remain_start
+            remain_len = max(remain_end - remain_start, 0)
             if remain_len > 0:
                 input_ids_rmpad[start_idx + half_seqlen : start_idx + half_seqlen + remain_len] = d[
                     remain_start:remain_end
@@ -545,6 +547,15 @@ def postprocess_thd_engine(
     return output_new_tensor
 
 
+def _build_npu_attn_mask(original_attention_mask: torch.Tensor) -> torch.Tensor:
+    """Build attn_mask for torch_npu.npu_fusion_attention (B1SS / [B, 1, Sq, Skv])"""
+    _, seq_len = original_attention_mask.shape
+    causal_mask = torch.tril(torch.ones(seq_len, seq_len, device=original_attention_mask.device)).to(torch.bool)
+    attn_mask = original_attention_mask.unsqueeze(-1) & original_attention_mask.unsqueeze(-2)
+    attn_mask = attn_mask & causal_mask
+    return (~attn_mask).unsqueeze(1).contiguous()
+
+
 def preprocess_bshd_engine(
     input_ids: torch.Tensor, pre_process: bool = True, need_roll: bool = False, use_fp8_padding: bool = False
 ):
@@ -637,8 +648,8 @@ def preprocess_bshd_engine(
         input_ids_bshd = torch.roll(input_ids_bshd, shifts=-1, dims=1)
 
     if is_npu_available:
-        # Ascend npu_fusion_attention sparse-mode-2 attn_mask must be [2048, 2048] is invalid.
-        attention_mask = None
+        # Ascend npu_fusion_attention's attn_mask must be BNSS / B1SS / 11SS / SS; [B, S] is invalid.
+        attention_mask = _build_npu_attn_mask(attention_mask)
 
     return input_ids_bshd, attention_mask, position_ids
 
@@ -657,10 +668,10 @@ def postprocess_bshd_engine(
     if is_npu_available:
         attention_mask = attention_mask.diagonal(dim1=-2, dim2=-1).squeeze(1)
         attention_mask = ~attention_mask.bool()
-    else:
-        assert output.shape[:2] == attention_mask.shape, (
-            f"output.shape: {output.shape}, attention_mask.shape: {attention_mask.shape}"
-        )
+
+    assert output.shape[:2] == attention_mask.shape, (
+        f"output.shape: {output.shape}, attention_mask.shape: {attention_mask.shape}"
+    )
 
     cp_size = mpu.get_context_parallel_world_size()
     cp_rank = mpu.get_context_parallel_rank()
@@ -719,25 +730,21 @@ def postprocess_bshd_engine(
     return output_new_tensor
 
 
-def build_vlm_attn_mask_thd(input_ids: torch.Tensor, pad_token_id: int = None) -> Optional[torch.Tensor]:
-    if is_npu_available:
-        return None
-
+def build_vlm_attn_mask_thd(input_ids: torch.Tensor, pad_token_id: int = None):
     input_ids_rmpad = input_ids.to_padded_tensor(pad_token_id)
+
+    if is_npu_available:
+        return input_ids_rmpad, None
+
     seqlens_in_batch = input_ids.offsets().diff()
     attention_mask = torch.zeros_like(input_ids_rmpad, dtype=torch.bool)
     for i, seqlen in enumerate(seqlens_in_batch):
         attention_mask[i, :seqlen] = True
 
-    return attention_mask
+    return input_ids_rmpad, attention_mask
 
 
-def build_vlm_attn_mask_bshd(
-    input_ids: torch.Tensor, batch_size: int, pad_token_id: int = None
-) -> Optional[torch.Tensor]:
-    if is_npu_available:
-        return None
-
+def build_vlm_attn_mask_bshd(input_ids: torch.Tensor, batch_size: int, pad_token_id: int = None):
     seqlens_in_batch = input_ids.offsets().diff()
     max_seqlen = seqlens_in_batch.max().item()
 
@@ -750,8 +757,12 @@ def build_vlm_attn_mask_bshd(
         max_seqlen += pad_size
 
     input_ids_bshd = input_ids.to_padded_tensor(pad_token_id, output_size=(batch_size, max_seqlen))
+
+    if is_npu_available:
+        return input_ids_bshd, None
+
     attention_mask = torch.zeros_like(input_ids_bshd, dtype=torch.bool)
     for i, seqlen in enumerate(seqlens_in_batch):
         attention_mask[i, :seqlen] = True
 
-    return attention_mask
+    return input_ids_bshd, attention_mask
