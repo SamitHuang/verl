@@ -546,6 +546,58 @@ def maybe_patch_fsdp_module(model):
         fully_shard_module.FSDPModule = orig_fsdp_module
 
 
+def patch_fsdp2_unsharded_param() -> None:
+    """Guard PyTorch FSDP2 against AttributeError on uncalled parameters during gradient accumulation.
+
+    In PyTorch FSDP2 (torch.distributed.fsdp.fully_shard), _unsharded_param on an FSDPParam is
+    lazily created upon its first all-gather in forward(). When a model contains uncalled or frozen
+    submodules (e.g. vision tower during text-only training or uninvoked subgraphs), _unsharded_param
+    is never created.
+
+    During gradient accumulation micro-batches (reduce_grads=False), PyTorch FSDP2's post-backward
+    calls to_accumulated_grad_if_needed() for every parameter in the FSDP unit, unconditionally
+    accessing self._unsharded_param.grad without checking hasattr(self, '_unsharded_param').
+    This patch ensures those uninvoked parameters are safely skipped.
+    """
+    try:
+        from torch.distributed.fsdp._fully_shard._fsdp_param import FSDPParam
+    except ImportError:
+        return
+
+    orig_to_accumulated = getattr(FSDPParam, "to_accumulated_grad_if_needed", None)
+    if orig_to_accumulated is not None and not getattr(orig_to_accumulated, "_verl_patched", False):
+
+        def _patched_to_accumulated_grad_if_needed(self):
+            if (
+                self.reduce_dtype is None
+                or not hasattr(self, "_unsharded_param")
+                or self._unsharded_param.grad is None
+                or self._unsharded_param.grad.dtype == self.reduce_dtype
+            ):
+                return
+            unsharded_grad = self._unsharded_param.grad
+            self._unsharded_param.grad = None
+            self.unsharded_accumulated_grad = unsharded_grad.to(self.reduce_dtype)
+
+        _patched_to_accumulated_grad_if_needed._verl_patched = True
+        FSDPParam.to_accumulated_grad_if_needed = _patched_to_accumulated_grad_if_needed
+
+    orig_accumulate = getattr(FSDPParam, "accumulate_unsharded_grad_if_needed", None)
+    if orig_accumulate is not None and not getattr(orig_accumulate, "_verl_patched", False):
+
+        def _patched_accumulate_unsharded_grad_if_needed(self):
+            if (
+                getattr(self, "unsharded_accumulated_grad", None) is not None
+                and hasattr(self, "_unsharded_param")
+                and self.unsharded_param.grad is not None
+            ):
+                self.unsharded_accumulated_grad += self.unsharded_param.grad
+                self.unsharded_param.grad = None
+
+        _patched_accumulate_unsharded_grad_if_needed._verl_patched = True
+        FSDPParam.accumulate_unsharded_grad_if_needed = _patched_accumulate_unsharded_grad_if_needed
+
+
 def _select_fsdp2_wrap_targets(model, fsdp_transformer_layer_cls_to_wrap):
     """Select modules to wrap individually with fully_shard in FSDP2.
 
@@ -573,6 +625,8 @@ def _select_fsdp2_wrap_targets(model, fsdp_transformer_layer_cls_to_wrap):
 def apply_fsdp2(model, fsdp_kwargs, config):
     """model: AutoModelForCausalLM"""
     assert CPUOffloadPolicy is not None, "PyTorch version >= 2.4 is required for using fully_shard API (FSDP2)"
+
+    patch_fsdp2_unsharded_param()
 
     default_transformer_cls_names_to_wrap = getattr(model, "_no_split_modules", None)
     fsdp_transformer_layer_cls_to_wrap = config.get("wrap_policy", {}).get(
